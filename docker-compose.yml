@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  finance-app:
+    build: .
+    container_name: finance_tracker
+    ports:
+      - "8501:8501"
+    env_file:
+      - .env
+    environment:
+      - APP_ENV=docker  # Overrides the .env file to signify Docker environment
+    volumes:
+      - .:/app
+    networks:
+      - superset-network
+    restart: unless-stopped
+
+networks:
+  superset-network:
+    external: true
