@@ -48,3 +48,35 @@ CREATE TABLE spendings (
 
 -- 4. Convert to a TimescaleDB hypertable partitioned by time (chunk size of 1 month is standard)
 SELECT create_hypertable('spendings', 'time', chunk_time_interval => INTERVAL '1 month');
+
+
+
+
+--6th Nov: add category
+-- Insert the detailed Earned, Investment, and Passive income categories
+INSERT INTO spending_categories (category, subcategory) VALUES
+('Earned Income', 'Salary and wages'), 
+('Earned Income', 'Tips and commissions'), 
+('Earned Income', 'Bonuses'), 
+('Earned Income', 'Self-employment income'),
+('Earned Income', 'Allowance'),
+
+('Investment Income', 'Stocks'), 
+('Investment Income', 'Real estate'), 
+('Investment Income', 'Collectibles'), 
+('Investment Income', 'Stock options'), 
+('Investment Income', 'Businesses'),
+
+('Passive Income', 'Interest'), 
+('Passive Income', 'Dividends'), 
+('Passive Income', 'Rental income'), 
+('Passive Income', 'Royalties');
+
+
+-- 2. Add the new column to indicate cash flow direction
+ALTER TABLE spendings 
+ADD COLUMN transaction_type VARCHAR(10) DEFAULT 'EXPENSE';
+
+-- 3. Enforce data integrity so it only accepts 'INCOME' or 'EXPENSE'
+ALTER TABLE spendings 
+ADD CONSTRAINT check_transaction_type CHECK (transaction_type IN ('INCOME', 'EXPENSE'));

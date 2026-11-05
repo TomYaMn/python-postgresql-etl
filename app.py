@@ -54,14 +54,23 @@ Format:
 [
   {
     "time": "YYYY-MM-DD HH:MM:SS",
+    "transaction_type": "INCOME", 
     "amount": 125.50,
-    "category": "Food",
-    "subcategory": "Groceries",
-    "merchant": "Whole Foods",
-    "description": "Weekly groceries"
+    "category": "Earned Income",
+    "subcategory": "Salary and wages",
+    "merchant": "Employer Name",
+    "description": "Bi-weekly salary"
   }
 ]
-Categories and subcategories must EXACTLY match this list (if unsure, use "Uncategorized", "Uncategorized"):
+
+Rules:
+1. "transaction_type" MUST be exactly "INCOME" (money received) or "EXPENSE" (money spent).
+2. "amount" MUST be a positive number (absolute value). Do not use negative numbers.
+3. Categories and subcategories must EXACTLY match this list (if unsure, use "Uncategorized", "Uncategorized"):
+
+Earned Income: Salary and wages, Tips and commissions, Bonuses, Self-employment income
+Investment Income: Stocks, Real estate, Collectibles, Stock options, Businesses
+Passive Income: Interest, Dividends, Rental income, Royalties
 Housing: Mortgage or rent, Property taxes, Household repairs, Homeowners association (HOA) fees, Furnishings
 Transportation: Car payment, Car warranty, Gas, Tires, Maintenance and oil changes, Parking fees, Repairs, Registration and DMV Fees, Public transit, Rideshare/Taxis, Tolls
 Food: Groceries, Restaurants, Coffee shops
@@ -80,6 +89,7 @@ Savings: Emergency fund, Big purchases, Other savings
 Gifts/Donations: Birthday, Anniversary, Wedding, Christmas, Special occasion, Charities
 Entertainment: Alcohol and/or bars, Games, Movies, Concerts, Vacations, Subscriptions, Hobbies
 Fees/Taxes: Bank fees, Late fees, Income tax
+Uncategorized: Uncategorized
 """
 
 st.set_page_config(layout="wide", page_title=f"Finance Tracker ({APP_ENV.upper()})")
@@ -96,7 +106,7 @@ with col2:
 @st.cache_data(ttl=5)
 def load_data(start, end):
     query = f"""
-        SELECT id, time, amount, category, subcategory, merchant, description 
+        SELECT id, time, transaction_type, amount, category, subcategory, merchant, description 
         FROM spendings 
         WHERE time >= '{start}' AND time <= '{end} 23:59:59'
         ORDER BY time DESC;
@@ -168,7 +178,7 @@ if uploaded_file is not None:
             try:
                 # Use Gemini API call structure
                 response = ai_client.models.generate_content(
-                    model="gemini-3.8-flash",
+                    model="gemini-3.6-flash",
                     contents=f"Extract these transactions:\n\n{text_content}",
                     config=types.GenerateContentConfig(
                         system_instruction=AI_SYSTEM_PROMPT,
