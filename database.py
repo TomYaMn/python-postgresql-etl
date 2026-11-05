@@ -30,3 +30,15 @@ def inject_ai_records(ai_edited_df):
         ai_edited_df.to_sql('spendings', con=conn, if_exists='append', index=False)
     
     logger.info(f"Injected {len(ai_edited_df)} AI-extracted records into TimescaleDB.")
+
+def get_category_options():
+    """Fetch distinct categories for the dropdown list."""
+    query = "SELECT DISTINCT category FROM spending_categories ORDER BY category;"
+    df = pd.read_sql(query, engine)
+    return df['category'].tolist()
+
+def get_subcategory_options():
+    """Fetch distinct subcategories for the dropdown list."""
+    query = "SELECT DISTINCT subcategory FROM spending_categories ORDER BY subcategory;"
+    df = pd.read_sql(query, engine)
+    return df['subcategory'].tolist()
