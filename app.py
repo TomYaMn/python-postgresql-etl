@@ -9,16 +9,23 @@ import pytz
 from datetime import datetime
 from dotenv import load_dotenv
 from openai import OpenAI
+from google import genai
+from google.genai import types
 
 # --- INITIALIZATION & CONFIGURATION ---
 load_dotenv()
 APP_ENV = os.getenv("APP_ENV", "local")
 DATABASE_URL = os.getenv("DATABASE_URL")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+API_KEY = os.getenv("API_KEY")
 DATABASE_URL = os.getenv("DATABASE_URL")
 
+## openAI
+# engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 5})
+# ai_client = OpenAI(api_key=API_KEY)
+
+## Gemini
 engine = create_engine(DATABASE_URL, connect_args={"connect_timeout": 5})
-ai_client = OpenAI(api_key=OPENAI_API_KEY)
+ai_client = genai.Client(api_key=API_KEY)
 
 # --- TIMEZONE & LOGGING SETUP ---
 kl_tz = pytz.timezone('Asia/Kuala_Lumpur')
@@ -123,23 +130,61 @@ if uploaded_file is not None:
             text_content += page.extract_text() + "\n"
     else:
         text_content = uploaded_file.read().decode("utf-8")
-    
+
+
+
+
+
+    ## Open AI
+    # if st.button("Run AI Extraction"):
+    #     logger.info(f"Running AI extraction on uploaded file: {uploaded_file.name}")
+    #     with st.spinner("AI is analyzing your bank statement..."):
+    #         try:
+    #             response = ai_client.chat.completions.create(
+    #                 model="gpt-4o",
+    #                 messages=[
+    #                     {"role": "system", "content": AI_SYSTEM_PROMPT},
+    #                     {"role": "user", "content": f"Extract these transactions:\n\n{text_content}"}
+    #                 ],
+    #                 temperature=0.0
+    #             )
+                
+    #             raw_json = response.choices[0].message.content.strip()
+    #             if raw_json.startswith("```json"):
+    #                 raw_json = raw_json[7:-3]
+                    
+    #             parsed_data = json.loads(raw_json)
+    #             st.session_state['ai_extracted'] = pd.DataFrame(parsed_data)
+    #             logger.info(f"AI extraction successful. Found {len(parsed_data)} records.")
+    #         except Exception as e:
+    #             logger.error(f"AI Extraction failed: {e}")
+    #             st.error(f"AI Extraction failed: {e}")
+
+
+
     if st.button("Run AI Extraction"):
         logger.info(f"Running AI extraction on uploaded file: {uploaded_file.name}")
         with st.spinner("AI is analyzing your bank statement..."):
             try:
-                response = ai_client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "system", "content": AI_SYSTEM_PROMPT},
-                        {"role": "user", "content": f"Extract these transactions:\n\n{text_content}"}
-                    ],
-                    temperature=0.0
+                # Use Gemini API call structure
+                response = ai_client.models.generate_content(
+                    model="gemini-3.8-flash",
+                    contents=f"Extract these transactions:\n\n{text_content}",
+                    config=types.GenerateContentConfig(
+                        system_instruction=AI_SYSTEM_PROMPT,
+                        temperature=0.0,
+                        response_mime_type="application/json" # Enforces pure JSON output
+                    )
                 )
                 
-                raw_json = response.choices[0].message.content.strip()
+                # Gemini returns the string directly in response.text
+                raw_json = response.text.strip()
+                
+                # Fallback cleanup just in case markdown sneaks in
                 if raw_json.startswith("```json"):
                     raw_json = raw_json[7:-3]
+                elif raw_json.startswith("```"):
+                    raw_json = raw_json[3:-3]
                     
                 parsed_data = json.loads(raw_json)
                 st.session_state['ai_extracted'] = pd.DataFrame(parsed_data)
