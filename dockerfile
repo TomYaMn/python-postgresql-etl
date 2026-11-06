@@ -4,10 +4,11 @@ FROM python:3.11-slim
 # Set the working directory inside the container
 WORKDIR /app
 
-# Install system dependencies needed for PostgreSQL (psycopg2) and building wheels
+# Install system dependencies needed for PostgreSQL, building wheels, and Timezones
 RUN apt-get update && apt-get install -y \
     build-essential \
     libpq-dev \
+    tzdata \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy the requirements file first to leverage Docker cache
