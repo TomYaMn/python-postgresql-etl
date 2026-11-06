@@ -4,15 +4,27 @@ services:
   finance-app:
     image: python-superset-etl:latest
     pull_policy: never
-    container_name: finance_tracker  # Keep only one container_name
+    container_name: finance_tracker
     ports:
       - "8501:8501"
     env_file:
       - .env
     environment:
-      - APP_ENV=docker  # Overrides the .env file to signify Docker environment
-    volumes:
-      - .:/app
+      - APP_ENV=docker
+    networks:
+      - superset-network
+    restart: unless-stopped
+
+  email-listener:
+    image: python-superset-etl:latest
+    pull_policy: never
+    container_name: finance_email_listener
+    # Override the default Streamlit command to run the background script
+    command: ["python", "email_listener.py"]
+    env_file:
+      - .env
+    environment:
+      - APP_ENV=docker
     networks:
       - superset-network
     restart: unless-stopped

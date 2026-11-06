@@ -14,6 +14,12 @@ API_KEY = os.getenv("API_KEY")
 # Timezone setup
 KL_TZ = pytz.timezone('Asia/Kuala_Lumpur')
 
+EMAIL_IMAP_SERVER = os.getenv("EMAIL_IMAP_SERVER")
+EMAIL_ACCOUNT = os.getenv("EMAIL_ACCOUNT")
+EMAIL_APP_PASSWORD = os.getenv("EMAIL_APP_PASSWORD")
+BANK_EMAIL_SENDER = os.getenv("BANK_EMAIL_SENDER")
+
+
 class KLFormatter(logging.Formatter):
     def converter(self, timestamp):
         dt = datetime.fromtimestamp(timestamp, tz=KL_TZ)
