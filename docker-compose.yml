@@ -2,8 +2,8 @@ version: '3.8'
 
 services:
   finance-app:
-    image: python-superset-etl:latest
-    pull_policy: never
+    image: tomyamn/python-superset-etl:latest
+    pull_policy: always
     container_name: finance_tracker
     ports:
       - "8501:8501"
@@ -16,8 +16,8 @@ services:
     restart: unless-stopped
 
   email-listener:
-    image: python-superset-etl:latest
-    pull_policy: never
+    image: tomyamn/python-superset-etl:latest
+    pull_policy: always
     container_name: finance_email_listener
     # Override the default Streamlit command to run the background script
     command: ["python", "email_listener.py"]
