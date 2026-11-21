@@ -3,6 +3,7 @@ import logging
 import pytz
 from datetime import datetime
 from dotenv import load_dotenv
+from notifier import TelegramErrorHandler
 
 # Load environment variables
 load_dotenv()
@@ -30,10 +31,19 @@ def get_logger():
     logger = logging.getLogger("finance_app")
     logger.setLevel(logging.INFO)
     if not logger.handlers:
-        handler = logging.StreamHandler()
         formatter = KLFormatter('%(asctime)s - %(levelname)s - %(message)s', datefmt='%Y-%m-%d %H:%M:%S MYT')
-        handler.setFormatter(formatter)
-        logger.addHandler(handler)
+        
+        # Console handler
+        stream_handler = logging.StreamHandler()
+        stream_handler.setFormatter(formatter)
+        logger.addHandler(stream_handler)
+        
+        # Telegram handler (ERROR level and above)
+        tg_handler = TelegramErrorHandler()
+        tg_handler.setLevel(logging.ERROR)
+        tg_handler.setFormatter(formatter)
+        logger.addHandler(tg_handler)
     return logger
 
+# This line is what app.py imports
 logger = get_logger()

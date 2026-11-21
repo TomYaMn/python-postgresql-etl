@@ -47,6 +47,7 @@ def save_manual_edits(edited_df, start_date, end_date):
             edited_df.to_sql('spendings', con=conn, if_exists='append', index=False)
             
     logger.info(f"Database updated manually for date range {start_date} to {end_date}.")
+    check_spending_limits()
 
 def inject_ai_records(ai_edited_df):
     # Dynamically grab the TZ variable from your .env file
@@ -63,6 +64,7 @@ def inject_ai_records(ai_edited_df):
         ai_edited_df.to_sql('spendings', con=conn, if_exists='append', index=False)
     
     logger.info(f"Injected {len(ai_edited_df)} AI-extracted records into TimescaleDB using {tz_str} timezone.")
+    check_spending_limits()
 
 def get_category_options():
     """Fetch distinct categories for the dropdown list."""
@@ -75,3 +77,37 @@ def get_subcategory_options():
     query = "SELECT DISTINCT subcategory FROM spending_categories ORDER BY subcategory;"
     df = pd.read_sql(query, engine)
     return df['subcategory'].tolist()
+
+# Add this import at the top of database.py
+from notifier import send_telegram_alert
+
+def check_spending_limits():
+    """Queries TimescaleDB for today's and this month's total expenses and alerts if limits are hit."""
+    tz_str = os.getenv("TZ", "Asia/Kuala_Lumpur")
+    daily_limit = float(os.getenv("DAILY_SPENDING_LIMIT", 0))
+    monthly_limit = float(os.getenv("MONTHLY_ALLOWANCE_LIMIT", 0))
+
+    with engine.connect() as conn:
+        daily_total = conn.execute(text("""
+            SELECT COALESCE(SUM(amount), 0)
+            FROM spendings
+            WHERE transaction_type = 'EXPENSE'
+              AND (time AT TIME ZONE :tz)::date = (NOW() AT TIME ZONE :tz)::date;
+        """), {"tz": tz_str}).scalar()
+
+        monthly_total = conn.execute(text("""
+            SELECT COALESCE(SUM(amount), 0)
+            FROM spendings
+            WHERE transaction_type = 'EXPENSE'
+              AND date_trunc('month', time AT TIME ZONE :tz) = date_trunc('month', NOW() AT TIME ZONE :tz);
+        """), {"tz": tz_str}).scalar()
+
+    alerts = []
+    if daily_limit > 0 and float(daily_total) >= daily_limit:
+        alerts.append(f"⚠️ *Daily Limit Hit:* Spent `{daily_total:.2f}` / `{daily_limit:.2f}` today.")
+
+    if monthly_limit > 0 and float(monthly_total) >= monthly_limit:
+        alerts.append(f"‼️ *Monthly Allowance Hit:* Spent `{monthly_total:.2f}` / `{monthly_limit:.2f}` this month.")
+
+    if alerts:
+        send_telegram_alert("\n".join(alerts))
