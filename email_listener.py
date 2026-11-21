@@ -43,26 +43,24 @@ def check_inbox():
         logger.info(f"Found {len(email_ids)} new bank emails to process.")
 
         for e_id in email_ids:
-            # Fetch the email
-            res, msg_data = mail.fetch(e_id, '(RFC822)')
+            # Use BODY.PEEK[] so Gmail does NOT mark it as read yet
+            res, msg_data = mail.fetch(e_id, '(BODY.PEEK[])')
             for response_part in msg_data:
                 if isinstance(response_part, tuple):
                     msg = email.message_from_bytes(response_part[1])
                     
-                    # Extract text and send to Gemini
                     text_content = get_email_body(msg)
                     logger.info("Extracting data via Gemini...")
                     
                     try:
                         parsed_data = process_bank_statement(text_content)
                         if parsed_data:
-                            # Convert to DataFrame, flag as AI, and inject
                             df = pd.DataFrame(parsed_data)
                             df['is_ai_extracted'] = True
                             inject_ai_records(df)
                             
-                            # Mark email as read only if injection succeeds
-                            mail.store(e_id, '+FLAGS', '\Seen')
+                            # Only mark as read AFTER Gemini + DB injection succeed
+                            mail.store(e_id, '+FLAGS', r'\Seen')
                     except Exception as e:
                         logger.error(f"Failed to process email {e_id}: {e}")
                         
