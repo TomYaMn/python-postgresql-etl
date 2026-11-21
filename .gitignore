@@ -97,3 +97,4 @@ Thumbs.db
 # ==========================================
 # Keep your actual secrets hidden, but track a sample template if needed:
 # !.env.example
+image.tar

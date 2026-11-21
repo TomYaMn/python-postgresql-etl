@@ -33,7 +33,7 @@ def check_inbox():
 
         # Search for UNREAD emails from the specific bank sender
         search_query = f'(UNREAD FROM "{BANK_EMAIL_SENDER}")'
-        status, messages = mail.search(None, search_query)
+        status, messages = mail.search(None, 'UNSEEN', 'FROM', f'"{BANK_EMAIL_SENDER}"')
         
         if status != 'OK' or not messages[0]:
             mail.logout()
